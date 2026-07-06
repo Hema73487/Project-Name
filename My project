@@ -1,0 +1,265 @@
+import { useState, useMemo } from "react";
+import { Check, X, ChevronDown, CalendarDays, Users, TrendingUp } from "lucide-react";
+
+const BATCHES = [
+  {
+    id: "b1",
+    name: "Batch A · Full Stack",
+    students: [
+      { id: "s1", name: "Ananya Rao" },
+      { id: "s2", name: "Kunal Mehta" },
+      { id: "s3", name: "Priya Nair" },
+      { id: "s4", name: "Rohit Sharma" },
+      { id: "s5", name: "Sneha Iyer" },
+    ],
+  },
+  {
+    id: "b2",
+    name: "Batch B · Data Analytics",
+    students: [
+      { id: "s6", name: "Arjun Verma" },
+      { id: "s7", name: "Divya Pillai" },
+      { id: "s8", name: "Karan Malhotra" },
+      { id: "s9", name: "Meera Joshi" },
+    ],
+  },
+  {
+    id: "b3",
+    name: "Batch C · UI/UX Design",
+    students: [
+      { id: "s10", name: "Nikhil Bose" },
+      { id: "s11", name: "Riya Kapoor" },
+      { id: "s12", name: "Tanvi Desai" },
+    ],
+  },
+];
+
+const todayISO = () => new Date().toISOString().slice(0, 10);
+
+const fmtDate = (iso) =>
+  new Date(iso + "T00:00:00").toLocaleDateString("en-IN", {
+    weekday: "short",
+    day: "2-digit",
+    month: "short",
+  });
+
+export default function AttendanceDashboard() {
+  const [batchId, setBatchId] = useState(BATCHES[0].id);
+  const [date, setDate] = useState(todayISO());
+  // records[batchId][date][studentId] = "present" | "absent"
+  const [records, setRecords] = useState({});
+  const [batchMenuOpen, setBatchMenuOpen] = useState(false);
+
+  const batch = BATCHES.find((b) => b.id === batchId);
+
+  const dayRecord = records[batchId]?.[date] || {};
+
+  const setStatus = (studentId, status) => {
+    setRecords((prev) => {
+      const batchRec = prev[batchId] || {};
+      const dateRec = batchRec[date] || {};
+      return {
+        ...prev,
+        [batchId]: {
+          ...batchRec,
+          [date]: { ...dateRec, [studentId]: status },
+        },
+      };
+    });
+  };
+
+  const markAll = (status) => {
+    setRecords((prev) => {
+      const batchRec = prev[batchId] || {};
+      const dateRec = { ...(batchRec[date] || {}) };
+      batch.students.forEach((s) => (dateRec[s.id] = status));
+      return { ...prev, [batchId]: { ...batchRec, [date]: dateRec } };
+    });
+  };
+
+  const markedCount = batch.students.filter((s) => dayRecord[s.id]).length;
+  const presentCount = batch.students.filter((s) => dayRecord[s.id] === "present").length;
+  const absentCount = batch.students.filter((s) => dayRecord[s.id] === "absent").length;
+  const dayPct = markedCount ? Math.round((presentCount / markedCount) * 100) : 0;
+
+  // Overall attendance % per student across all recorded dates for this batch
+  const studentStats = useMemo(() => {
+    const batchRec = records[batchId] || {};
+    const dates = Object.keys(batchRec);
+    return batch.students.map((s) => {
+      let present = 0;
+      let total = 0;
+      dates.forEach((d) => {
+        const st = batchRec[d][s.id];
+        if (st) {
+          total += 1;
+          if (st === "present") present += 1;
+        }
+      });
+      return {
+        ...s,
+        pct: total ? Math.round((present / total) * 100) : null,
+        total,
+      };
+    });
+  }, [records, batchId, batch.students]);
+
+  const last7 = useMemo(() => {
+    const arr = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      arr.push(d.toISOString().slice(0, 10));
+    }
+    return arr;
+  }, []);
+
+  const trend = useMemo(() => {
+    const batchRec = records[batchId] || {};
+    return last7.map((d) => {
+      const rec = batchRec[d] || {};
+      const total = batch.students.length;
+      const present = Object.values(rec).filter((v) => v === "present").length;
+      const marked = Object.values(rec).filter(Boolean).length;
+      return { date: d, pct: marked ? Math.round((present / marked) * 100) : null, marked, total };
+    });
+  }, [records, batchId, last7, batch.students.length]);
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#F5F1E8", fontFamily: "'Source Sans 3', 'Segoe UI', sans-serif", color: "#1B2A41" }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Fraunces:wght@500;600;700&family=Source+Sans+3:wght@400;500;600;700&display=swap');
+        .fr { font-family: 'Fraunces', Georgia, serif; }
+        .stamp-btn { transition: transform 0.12s ease, box-shadow 0.12s ease; }
+        .stamp-btn:active { transform: scale(0.94); }
+        .row-fade { animation: rowIn 0.25s ease both; }
+        @keyframes rowIn { from { opacity: 0; transform: translateY(4px);} to { opacity:1; transform: translateY(0);} }
+        ::-webkit-scrollbar { height: 8px; width: 8px; }
+        ::-webkit-scrollbar-thumb { background: #D8CBB5; border-radius: 4px; }
+      `}</style>
+
+      {/* Header */}
+      <header style={{ borderBottom: "1px solid #E3DAC9", padding: "28px 32px", background: "#1B2A41" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
+          <div>
+            <div style={{ fontSize: 12, letterSpacing: "0.14em", textTransform: "uppercase", color: "#C9A24A", fontWeight: 600, marginBottom: 6 }}>
+              Session Register
+            </div>
+            <h1 className="fr" style={{ fontSize: 28, fontWeight: 600, color: "#F7F3EC", margin: 0 }}>
+              Trainer Attendance Dashboard
+            </h1>
+          </div>
+          <div style={{ display: "flex", gap: 10 }}>
+            <div style={{ background: "#24384F", borderRadius: 10, padding: "10px 16px", display: "flex", alignItems: "center", gap: 8 }}>
+              <CalendarDays size={16} color="#C9A24A" />
+              <input
+                type="date"
+                value={date}
+                onChange={(e) => setDate(e.target.value)}
+                style={{ background: "transparent", border: "none", color: "#F7F3EC", fontSize: 14, fontWeight: 600, outline: "none" }}
+              />
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main style={{ maxWidth: 1100, margin: "0 auto", padding: "28px 32px 60px" }}>
+        {/* Batch selector */}
+        <div style={{ position: "relative", marginBottom: 24, maxWidth: 320 }}>
+          <button
+            onClick={() => setBatchMenuOpen((o) => !o)}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              background: "#fff",
+              border: "1px solid #E3DAC9",
+              borderRadius: 10,
+              padding: "12px 16px",
+              cursor: "pointer",
+              fontWeight: 600,
+              fontSize: 14,
+              color: "#1B2A41",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <Users size={16} color="#4C7C77" />
+              {batch.name}
+            </span>
+            <ChevronDown size={16} style={{ transform: batchMenuOpen ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+          </button>
+          {batchMenuOpen && (
+            <div style={{ position: "absolute", top: "110%", left: 0, right: 0, background: "#fff", border: "1px solid #E3DAC9", borderRadius: 10, overflow: "hidden", zIndex: 10, boxShadow: "0 8px 24px rgba(27,42,65,0.12)" }}>
+              {BATCHES.map((b) => (
+                <div
+                  key={b.id}
+                  onClick={() => { setBatchId(b.id); setBatchMenuOpen(false); }}
+                  style={{ padding: "10px 16px", cursor: "pointer", fontSize: 14, fontWeight: b.id === batchId ? 700 : 500, background: b.id === batchId ? "#F5F1E8" : "transparent" }}
+                >
+                  {b.name}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Stat cards */}
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(170px, 1fr))", gap: 14, marginBottom: 28 }}>
+          <StatCard label="Present today" value={presentCount} sub={`of ${batch.students.length}`} color="#4C7C77" />
+          <StatCard label="Absent today" value={absentCount} sub={`of ${batch.students.length}`} color="#C1503F" />
+          <StatCard label="Unmarked" value={batch.students.length - markedCount} sub="pending" color="#B8923A" />
+          <div style={{ background: "#1B2A41", borderRadius: 12, padding: "16px 18px", display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center" }}>
+            <div className="fr" style={{ fontSize: 30, fontWeight: 700, color: "#C9A24A" }}>{dayPct}%</div>
+            <div style={{ fontSize: 11, color: "#B9C3D0", textTransform: "uppercase", letterSpacing: "0.08em", marginTop: 2 }}>Today's rate</div>
+          </div>
+        </div>
+
+        {/* Bulk actions + table */}
+        <div style={{ background: "#fff", borderRadius: 14, border: "1px solid #E3DAC9", overflow: "hidden", marginBottom: 32 }}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "16px 20px", borderBottom: "1px solid #EEE6D8" }}>
+            <div className="fr" style={{ fontWeight: 600, fontSize: 16 }}>
+              {fmtDate(date)}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => markAll("present")} style={pillBtn("#4C7C77")}>Mark all present</button>
+              <button onClick={() => markAll("absent")} style={pillBtn("#C1503F")}>Mark all absent</button>
+            </div>
+          </div>
+
+          <div>
+            {batch.students.map((s, i) => {
+              const status = dayRecord[s.id];
+              return (
+                <div
+                  key={s.id}
+                  className="row-fade"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "14px 20px",
+                    borderBottom: i === batch.students.length - 1 ? "none" : "1px solid #F1EBDD",
+                    animationDelay: `${i * 30}ms`,
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div style={{
+                      width: 34, height: 34, borderRadius: "50%", background: "#F5F1E8",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontWeight: 700, fontSize: 13, color: "#1B2A41",
+                    }}>
+                      {s.name.split(" ").map((n) => n[0]).join("")}
+                    </div>
+                    <span style={{ fontWeight: 500, fontSize: 14.5 }}>{s.name}</span>
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      className="stamp-btn"
+                      onClick={() => setStatus(s.id, "present")}
+                      style={toggleBtn(status === "present", "#4C7C77")}
+                    >
+                      <Check size={14} /> Present
+                    </button>
+                    <butto
