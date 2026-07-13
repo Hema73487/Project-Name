@@ -1,0 +1,71 @@
+.container {
+  max-width: 900px;
+  margin: 20px auto;
+  font-family: Arial, sans-serif;
+  padding: 20px;
+  background: #f4f7f6;
+  border-radius: 8px;
+}
+
+.dashboard {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 15px;
+  margin-bottom: 25px;
+}
+
+.stat-card {
+  padding: 15px;
+  background: #fff;
+  text-align: center;
+  border-radius: 5px;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.green { color: #2ecc71; }
+.yellow { color: #f1c40f; }
+.red { color: #e74c3c; }
+
+.assignment-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.assignment-form input, .assignment-form select {
+  padding: 8px;
+  flex: 1;
+}
+
+.filter-section {
+  margin-bottom: 15px;
+}
+
+.assignment-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+.assignment-table th, .assignment-table td {
+  padding: 12px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
+.assignment-table th {
+  background-color: #34495e;
+  color: white;
+}
+
+.badge {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.submitted { background: #d4edda; color: #155724; }
+.pending { background: #fff3cd; color: #856404; }
+.late { background: #f8d7da; color: #721c24; }
